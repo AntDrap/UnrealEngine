@@ -12,7 +12,7 @@ class NEWPROJECT_API AFirstPerson : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
+	// Sets default values for this character's propertie
 	AFirstPerson();
 
 protected:
