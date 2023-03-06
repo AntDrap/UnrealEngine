@@ -1,17 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "EnemyCharacter.h"
+#include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
+#include "DodgeballProjectile.h"
 
-// Sets default values
 AEnemyCharacter::AEnemyCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
+	SightSource = CreateDefaultSubobject<USceneComponent>(TEXT("Sight Source"));
+	SightSource->SetupAttachment(RootComponent);
 }
 
 void AEnemyCharacter::BeginPlay()
@@ -22,36 +21,64 @@ void AEnemyCharacter::BeginPlay()
 void AEnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	bCanSeePlayer = LookAtActor(PlayerCharacter);
 
-	ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
-	LookAtActor(PlayerCharacter);
+	if (bCanSeePlayer != bPreviousCanSeePlayer)
+	{
+		if (bCanSeePlayer)
+		{
+			GetWorldTimerManager().SetTimer(ThrowTimerHandle, this, &AEnemyCharacter::ThrowDodgeball, ThrowingInterval, true, ThrowingDelay);
+		}
+		else
+		{
+			GetWorldTimerManager().ClearTimer(ThrowTimerHandle);
+		}
+	}
+
+	bPreviousCanSeePlayer = bCanSeePlayer;
 }
 
-void AEnemyCharacter::LookAtActor(AActor* TargetActor)
+bool AEnemyCharacter::LookAtActor(AActor* TargetActor)
 {
-	if (TargetActor == nullptr) return;
+	if (TargetActor == nullptr) return false;
+
 	if (CanSeeActor(TargetActor))
 	{
 		FVector Start = GetActorLocation();
 		FVector End = TargetActor->GetActorLocation();
 		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
 		SetActorRotation(LookAtRotation);
+		return true;
 	}
+
+	return false;
 }
 
-bool AEnemyCharacter::CanSeeActor(const AActor* TargetActor) const
+bool AEnemyCharacter::CanSeeActor(AActor* TargetActor)
 {
 	if (TargetActor == nullptr) return false;
 	FHitResult Hit;
-
-	FVector Start = GetActorLocation();
+	FVector Start = SightSource->GetComponentLocation();
 	FVector End = TargetActor->GetActorLocation();
-	ECollisionChannel Channel = ECollisionChannel::ECC_Visibility;
+	ECollisionChannel Channel = ECollisionChannel::ECC_GameTraceChannel1;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(TargetActor);
 	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, Channel, QueryParams);
-	FColor LineColor = (Hit.bBlockingHit) ? FColor::Green : FColor::Red;
-	DrawDebugLine(GetWorld(), Start, End, LineColor);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red);
 	return !Hit.bBlockingHit;
+}
+
+void AEnemyCharacter::ThrowDodgeball()
+{
+	if (DodgeballClass == nullptr)
+	{
+		return;
+	}
+
+	FVector ForwardVector = GetActorForwardVector();
+	float SpawnDistance = 40.f;
+	FVector SpawnLocation = GetActorLocation() + (ForwardVector * SpawnDistance);
+	GetWorld()->SpawnActor<ADodgeballProjectile>(DodgeballClass, SpawnLocation, GetActorRotation());
 }
