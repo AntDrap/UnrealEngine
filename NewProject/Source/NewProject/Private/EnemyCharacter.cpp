@@ -28,6 +28,7 @@ void AEnemyCharacter::Tick(float DeltaTime)
 	{
 		if (bCanSeePlayer)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("SEE"));
 			GetWorldTimerManager().SetTimer(ThrowTimerHandle, this, &AEnemyCharacter::ThrowDodgeball, ThrowingInterval, true, ThrowingDelay);
 		}
 		else
@@ -74,8 +75,11 @@ void AEnemyCharacter::ThrowDodgeball()
 {
 	if (DodgeballClass == nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("NO THROW"));
 		return;
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("THROW"));
 
 	FVector ForwardVector = GetActorForwardVector();
 	float SpawnDistance = 40.f;
