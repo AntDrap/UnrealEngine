@@ -18,6 +18,14 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Dodgeball, meta = (AllowPrivateAccess = "true"))
 		class UProjectileMovementComponent* ProjectileMovement;
+	UPROPERTY(EditAnywhere, Category = Sound)
+		class USoundBase* BounceSound;
+	UPROPERTY(EditAnywhere, Category = Sound)
+		class USoundBase* DamageSound;
+	UPROPERTY(EditAnywhere, Category = Sound)
+		class USoundAttenuation* BounceSoundAttenuation;
+	UPROPERTY(EditAnywhere, Category = Particles)
+		class UParticleSystem* HitParticles;
 
 protected:
 
